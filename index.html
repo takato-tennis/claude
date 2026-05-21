@@ -477,6 +477,109 @@
     footer a { color: var(--muted); text-decoration: none; }
     footer a:hover { color: var(--text); }
 
+    /* ── Workflow ── */
+    .workflow-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+      margin-top: 64px;
+    }
+    @media (max-width: 800px) {
+      .workflow-layout { grid-template-columns: 1fr; }
+    }
+    .workflow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .wf-step {
+      display: flex;
+      gap: 18px;
+      position: relative;
+    }
+    .wf-step:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 44px;
+      bottom: -16px;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(217,119,6,.5), rgba(217,119,6,.1));
+    }
+    .wf-dot {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: rgba(217,119,6,.12);
+      border: 2px solid rgba(217,119,6,.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .wf-body {
+      padding-bottom: 32px;
+    }
+    .wf-body h4 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .wf-body p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .wf-tag {
+      display: inline-block;
+      background: rgba(217,119,6,.1);
+      border: 1px solid rgba(217,119,6,.25);
+      color: var(--accent2);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 100px;
+      margin-bottom: 8px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .code-block {
+      background: #0a0a10;
+      border: 1px solid rgba(217,119,6,.2);
+      border-radius: 14px;
+      overflow: hidden;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    .code-header {
+      background: #111118;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .code-dots { display: flex; gap: 6px; }
+    .code-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .code-filename {
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: 6px;
+    }
+    .code-body { padding: 18px; overflow-x: auto; }
+    .code-body .kw  { color: #c084fc; }
+    .code-body .str { color: #86efac; }
+    .code-body .cm  { color: #4b5563; font-style: italic; }
+    .code-body .key { color: #93c5fd; }
+    .code-body .val { color: #f59e0b; }
+    .code-body .op  { color: #f5f5f7; opacity: .5; }
+
     /* ── Architecture ── */
     .arch-flow {
       display: flex;
@@ -629,6 +732,7 @@
   <ul class="nav-links">
     <li><a href="#features">機能</a></li>
     <li><a href="#architecture">仕組み</a></li>
+    <li><a href="#workflow">デプロイ</a></li>
     <li><a href="#how">使い方</a></li>
     <li><a href="#reviews">レビュー</a></li>
   </ul>
@@ -722,6 +826,99 @@ function getUserById(id: string) {
       <div class="feature-icon">🔒</div>
       <h3>エンタープライズセキュリティ</h3>
       <p>コードはデバイスとAnthropicの間でエンドツーエンド暗号化。SOC 2 Type II 準拠。</p>
+    </div>
+  </div>
+</section>
+
+<!-- Workflow -->
+<section id="workflow">
+  <p class="section-label">CI/CD Workflow</p>
+  <h2 class="section-title">自動デプロイの仕組み</h2>
+  <p class="section-sub">このサイト自体が GitHub Actions で自動デプロイされています。<br/>コードを push するだけで本番環境に反映。</p>
+
+  <div class="workflow-layout">
+    <!-- Steps -->
+    <div class="workflow-steps">
+      <div class="wf-step">
+        <div class="wf-dot">🔀</div>
+        <div class="wf-body">
+          <div class="wf-tag">on: push / workflow_dispatch</div>
+          <h4>トリガー</h4>
+          <p><code>main</code> ブランチへの push、または手動実行（workflow_dispatch）でワークフローが起動。並列実行を防ぐ <code>concurrency</code> 設定により、古いデプロイは自動キャンセルされます。</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-dot">🔒</div>
+        <div class="wf-body">
+          <div class="wf-tag">permissions</div>
+          <h4>最小権限の付与</h4>
+          <p>ワークフローには <code>pages: write</code> と <code>id-token: write</code> のみ付与。<code>contents: read</code> でコードを読み取り専用にし、不要な書き込みアクセスを排除します。</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-dot">📦</div>
+        <div class="wf-body">
+          <div class="wf-tag">actions/upload-pages-artifact@v3</div>
+          <h4>成果物のアップロード</h4>
+          <p>リポジトリ直下（<code>path: .</code>）の静的ファイルを Pages 専用アーティファクトとしてパッケージ。ビルドステップなしで <code>index.html</code> をそのままデプロイできます。</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-dot">🚀</div>
+        <div class="wf-body">
+          <div class="wf-tag">actions/deploy-pages@v4</div>
+          <h4>GitHub Pages へデプロイ</h4>
+          <p>アーティファクトを GitHub Pages の CDN に展開。デプロイ完了後、<code>steps.deployment.outputs.page_url</code> で公開 URL が確認できます。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code -->
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots">
+          <div class="code-dot" style="background:#ff5f57"></div>
+          <div class="code-dot" style="background:#febc2e"></div>
+          <div class="code-dot" style="background:#28c840"></div>
+        </div>
+        <span class="code-filename">.github/workflows/pages.yml</span>
+      </div>
+      <div class="code-body"><pre><span class="key">name</span><span class="op">:</span> <span class="str">Deploy to GitHub Pages</span>
+
+<span class="key">on</span><span class="op">:</span>
+  <span class="key">push</span><span class="op">:</span>
+    <span class="key">branches</span><span class="op">:</span> <span class="op">[</span><span class="str">main</span><span class="op">]</span>
+  <span class="key">workflow_dispatch</span><span class="op">:</span>
+
+<span class="key">permissions</span><span class="op">:</span>
+  <span class="key">contents</span><span class="op">:</span> <span class="val">read</span>
+  <span class="key">pages</span><span class="op">:</span>    <span class="val">write</span>
+  <span class="key">id-token</span><span class="op">:</span> <span class="val">write</span>
+
+<span class="key">concurrency</span><span class="op">:</span>
+  <span class="key">group</span><span class="op">:</span> <span class="str">pages</span>
+  <span class="key">cancel-in-progress</span><span class="op">:</span> <span class="val">true</span>
+
+<span class="key">jobs</span><span class="op">:</span>
+  <span class="key">deploy</span><span class="op">:</span>
+    <span class="key">runs-on</span><span class="op">:</span> <span class="str">ubuntu-latest</span>
+    <span class="key">environment</span><span class="op">:</span>
+      <span class="key">name</span><span class="op">:</span> <span class="str">github-pages</span>
+      <span class="key">url</span><span class="op">:</span>  <span class="str">${{ steps.deployment.outputs.page_url }}</span>
+    <span class="key">steps</span><span class="op">:</span>
+      <span class="op">-</span> <span class="key">uses</span><span class="op">:</span> <span class="str">actions/checkout@v4</span>
+
+      <span class="op">-</span> <span class="key">name</span><span class="op">:</span> <span class="str">Setup Pages</span>
+        <span class="key">uses</span><span class="op">:</span> <span class="str">actions/configure-pages@v5</span>
+
+      <span class="op">-</span> <span class="key">name</span><span class="op">:</span> <span class="str">Upload artifact</span>
+        <span class="key">uses</span><span class="op">:</span> <span class="str">actions/upload-pages-artifact@v3</span>
+        <span class="key">with</span><span class="op">:</span>
+          <span class="key">path</span><span class="op">:</span> <span class="str">.</span>
+
+      <span class="op">-</span> <span class="key">name</span><span class="op">:</span> <span class="str">Deploy to GitHub Pages</span>
+        <span class="key">id</span><span class="op">:</span>   <span class="str">deployment</span>
+        <span class="key">uses</span><span class="op">:</span> <span class="str">actions/deploy-pages@v4</span></pre></div>
     </div>
   </div>
 </section>
